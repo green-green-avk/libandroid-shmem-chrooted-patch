@@ -55,15 +55,14 @@ diff -uNr libandroid-shmem-0.3/Makefile libandroid-shmem-0.3-chrooted/Makefile
  .PHONY: install
 diff -uNr libandroid-shmem-0.3/shmem.c libandroid-shmem-0.3-chrooted/shmem.c
 --- libandroid-shmem-0.3/shmem.c	2021-03-26 23:54:55.000000000 +0000
-+++ libandroid-shmem-0.3-chrooted/shmem.c	2021-04-19 19:53:09.367988185 +0000
-@@ -1,4 +1,5 @@
++++ libandroid-shmem-0.3-chrooted/shmem.c	2021-04-19 21:47:04.687985577 +0000
+@@ -1,4 +1,4 @@
 -#include <android/log.h>
 +#include <string.h>
-+
  #include <errno.h>
  #include <pthread.h>
  #include <stdbool.h>
-@@ -10,13 +11,17 @@
+@@ -10,17 +10,39 @@
  #include <sys/un.h>
  #include <unistd.h>
  #include <paths.h>
@@ -80,11 +79,33 @@ diff -uNr libandroid-shmem-0.3/shmem.c libandroid-shmem-0.3-chrooted/shmem.c
 -#include "shm.h"
 -
 -#define DBG(...) __android_log_print(ANDROID_LOG_INFO, "shmem", __VA_ARGS__)
-+#define DBG(...)
++#define DBG(...) //fprintf(stderr, __VA_ARGS__)
  #define ASHV_KEY_SYMLINK_PATH _PATH_TMP "ashv_key_%d"
  #define ANDROID_SHMEM_SOCKNAME "/dev/shm/%08x"
  #define ROUND_UP(N, S) ((((N) + (S) - 1) / (S)) * (S))
-@@ -536,13 +541,13 @@
+ 
++/* <=---=> */
++
++/* Hello, Musl C (Alpine Linux at least) */
++
++/* Evaluate EXPRESSION, and repeat as long as it returns -1 with `errno'
++   set to EINTR. */
++
++#ifndef TEMP_FAILURE_RETRY
++#define TEMP_FAILURE_RETRY(expression) \
++  (__extension__ \
++    ({ long int __result; \
++       do __result = (long int) (expression); \
++       while (__result == -1L && errno == EINTR); \
++       __result; }))
++#endif
++
++/* <=---=> */
++
+ static pthread_mutex_t mutex = PTHREAD_MUTEX_INITIALIZER;
+ 
+ typedef struct {
+@@ -536,13 +558,13 @@
  		memset(buf, 0, sizeof(struct shmid_ds));
  		buf->shm_segsz = shmem[idx].size;
  		buf->shm_nattch = 1;
